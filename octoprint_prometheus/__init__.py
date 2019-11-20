@@ -28,6 +28,8 @@ from __future__ import absolute_import
 
 from threading import Timer
 from prometheus_client import Counter, Enum, Gauge, Info, start_http_server
+from flask import Response, abort
+import httplib
 import octoprint.plugin
 
 from .gcodeparser import Gcode_parser
@@ -37,7 +39,18 @@ class PrometheusPlugin(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
                        octoprint.plugin.TemplatePlugin,
                        octoprint.plugin.ProgressPlugin,
-                       octoprint.plugin.EventHandlerPlugin):
+                       octoprint.plugin.EventHandlerPlugin,
+                       octoprint.plugin.BlueprintPlugin):
+
+        @octoprint.plugin.BlueprintPlugin.route("/metrics", methods=["GET"])
+        def metrics_proxy(self, size):
+            if not bool(self._settings.get(["prometheus_enabled"])):
+                abort(404)
+
+            conn = httplib.HTTPConnection("localhost", int(self._settings.get(["prometheus_port"])))
+            conn.request("GET", "/metrics")
+            resp = conn.getresponse()
+            Response(response=resp.read(), status=resp.status, content_type=resp.getheader('content-type'))
 
         DESCRIPTIONS = {"temperature_bed_actual": "Actual Temperature in Celsius of Bed",
                         "temperature_bed__target": "Target Temperature in Celsius of Bed",
@@ -95,9 +108,9 @@ class PrometheusPlugin(octoprint.plugin.StartupPlugin,
         def on_after_startup(self):
             self._logger.info("Starting Prometheus! (port: %s)" % self._settings.get(["prometheus_port"]))
             start_http_server(int(self._settings.get(["prometheus_port"])))
-                
+
         def get_settings_defaults(self):
-            return dict(prometheus_port=8000)
+            return dict(prometheus_port=8000, prometheus_exposed=False)
 
         def get_template_configs(self):
             return [
