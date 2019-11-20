@@ -52,7 +52,7 @@ class PrometheusPlugin(octoprint.plugin.StartupPlugin,
             conn = httplib.HTTPConnection("localhost", int(self._settings.get(["prometheus_port"])))
             conn.request("GET", "/metrics")
             resp = conn.getresponse()
-            Response(response=resp.read(), status=resp.status, content_type=resp.getheader('content-type'))
+            return Response(response=resp.read(), status=resp.status, content_type=resp.getheader('content-type'))
 
         DESCRIPTIONS = {"temperature_bed_actual": "Actual Temperature in Celsius of Bed",
                         "temperature_bed__target": "Target Temperature in Celsius of Bed",
