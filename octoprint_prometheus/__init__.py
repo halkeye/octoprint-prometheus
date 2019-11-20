@@ -44,7 +44,9 @@ class PrometheusPlugin(octoprint.plugin.StartupPlugin,
 
         @octoprint.plugin.BlueprintPlugin.route("/metrics", methods=["GET"])
         def metrics_proxy(self, size):
-            if not bool(self._settings.get(["prometheus_enabled"])):
+            self._logger.info("Prometheus Proxy (Exposed: %s)" % bool(self._settings.get(["prometheus_exposed"])))
+            if not bool(self._settings.get(["prometheus_exposed"])):
+                self._logger.info("Prometheus metrics are not exposed")
                 abort(404)
 
             conn = httplib.HTTPConnection("localhost", int(self._settings.get(["prometheus_port"])))
